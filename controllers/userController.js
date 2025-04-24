@@ -117,6 +117,28 @@ export const userCredits = async (req, res) => {
   }
 };
 
+export const getUserDetails = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.body.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 const razorpayInstance = new razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -209,13 +231,14 @@ export const paymentRazorpay = async (req, res) => {
   }
 };
 
-
-export const paymentVerification = async(req, res) => {
+export const paymentVerification = async (req, res) => {
   try {
     const { razorpay_order_id } = req.body;
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
     if (orderInfo.status === "paid") {
-      const transactionData = await transactionModel.findById(orderInfo.receipt);
+      const transactionData = await transactionModel.findById(
+        orderInfo.receipt
+      );
 
       if (transactionData.payment) {
         return res.status(400).json({
@@ -223,13 +246,13 @@ export const paymentVerification = async(req, res) => {
           message: "Payment already verified",
         });
       }
-      
+
       const userData = await userModel.findById(transactionData.userId);
 
       const creditBalance = userData.creditBalance + transactionData.credits;
       await userModel.findByIdAndUpdate(userData._id, {
         creditBalance,
-      })
+      });
 
       await transactionModel.findByIdAndUpdate(transactionData._id, {
         payment: true,
@@ -239,22 +262,17 @@ export const paymentVerification = async(req, res) => {
         success: true,
         message: "Payment verified successfully",
       });
-      
-      
     } else {
       return res.status(400).json({
         success: false,
         message: "Payment not verified",
       });
     }
-
-
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
       success: false,
       message: error.message,
     });
-    
   }
-}
+};
