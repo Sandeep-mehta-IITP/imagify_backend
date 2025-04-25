@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import razorpay from "razorpay";
 import transactionModel from "../models/transactionModel.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // register user
 export const registerUser = async (req, res) => {
@@ -102,27 +103,26 @@ export const checkEmailRegistered = async (req, res) => {
   const { email } = req.body;
 
   try {
-    const user = await userModel.findOne({ email })
+    const user = await userModel.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "Email not registered, Please enter registered email address."
-      })
+        message: "Email not registered, Please enter registered email address.",
+      });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Email is registered."
-    })
-
+      message: "Email is registered.",
+    });
   } catch (error) {
-     return res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
-     })
+    });
   }
-}
+};
 
 // forgot password
 export const forgotPassword = async (req, res) => {
@@ -149,15 +149,29 @@ export const forgotPassword = async (req, res) => {
   await user.save();
 
   // Email OTP to user
-  console.log(`OTP for ${email} is ${otp}`);
+
+  const subject = "🔐 [Imagify] Your OTP for Password Reset";
+
+  const htmlContent = `
+  <div style="font-family: 'Segoe UI', sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+    <h2 style="color: #4a90e2;">Imagify - Password Reset</h2>
+    <p>Hi <strong>${user.name}</strong>,</p>
+    <p>You recently requested to reset your password. Please use the OTP below to proceed:</p>
+    <h1 style="text-align: center; color: #333;">${otp}</h1>
+    <p>This OTP is valid for <strong>5 minutes</strong>.</p>
+    <p>If you did not request this, please ignore this email.</p>
+    <br/>
+    <p style="font-size: 14px; color: gray;">Thank you,<br/>Team Imagify</p>
+  </div>
+`;
+
+  await sendEmail(email, subject, htmlContent);
 
   res.status(200).json({
     success: true,
     message: "OTP sent to your email",
   });
-    
-  
-}
+};
 
 // verify otp
 export const verifyOtp = async (req, res) => {
@@ -167,49 +181,9 @@ export const verifyOtp = async (req, res) => {
       success: false,
       message: "Email and OTP are required",
     });
-
   }
-    const user = await userModel.findOne({ email });
+  const user = await userModel.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    if (user.otp !== otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
-    }
-
-    if (user.otpExpiry < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP expired",
-      });
-    }
-
-    user.isOtpVerified = true;
-    user.otp = null;
-    user.otpExpiry = null;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "OTP verified successfully",
-    });
-
-
-}
-
-// reset password
-export const resetPassword = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
-
-  const user = await userModel.findOne( { email });
   if (!user) {
     return res.status(404).json({
       success: false,
@@ -217,7 +191,44 @@ export const resetPassword = async (req, res) => {
     });
   }
 
-  if (!email ) {
+  if (user.otp !== otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid OTP",
+    });
+  }
+
+  if (user.otpExpiry < Date.now()) {
+    return res.status(400).json({
+      success: false,
+      message: "OTP expired",
+    });
+  }
+
+  user.isOtpVerified = true;
+  user.otp = null;
+  user.otpExpiry = null;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "OTP verified successfully",
+  });
+};
+
+// reset password
+export const resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  const user = await userModel.findOne({ email });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  if (!email) {
     return res.status(400).json({
       success: false,
       message: "Email is required",
@@ -227,7 +238,7 @@ export const resetPassword = async (req, res) => {
   if (!otp) {
     return res.status(400).json({
       success: false,
-      message: "OTP is required", 
+      message: "OTP is required",
     });
   }
 
@@ -235,7 +246,7 @@ export const resetPassword = async (req, res) => {
     return res.status(400).json({
       success: false,
       message: "Please enter your new password",
-    })
+    });
   }
 
   const hashedNewPassword = await bcrypt.hash(newPassword, 10);
@@ -248,9 +259,7 @@ export const resetPassword = async (req, res) => {
     success: true,
     message: "Password reset successfully",
   });
-
-
-}
+};
 
 // credits handler
 export const userCredits = async (req, res) => {
@@ -274,7 +283,6 @@ export const userCredits = async (req, res) => {
     });
   }
 };
-
 
 const razorpayInstance = new razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -368,8 +376,7 @@ export const paymentRazorpay = async (req, res) => {
   }
 };
 
-
-// payment verification 
+// payment verification
 export const paymentVerification = async (req, res) => {
   try {
     const { razorpay_order_id } = req.body;

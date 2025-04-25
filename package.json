@@ -19,6 +19,7 @@
     "form-data": "^4.0.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
+    "nodemailer": "^6.10.1",
     "nodemon": "^3.1.9",
     "razorpay": "^2.9.6"
   }
