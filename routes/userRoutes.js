@@ -7,7 +7,8 @@ import {
     paymentVerification, 
     forgotPassword, 
     verifyOtp, 
-    resetPassword 
+    resetPassword, 
+    checkEmailRegistered
 } from '../controllers/userController.js';
 import userAuth from '../middlewares/auth.js';
 
@@ -21,6 +22,7 @@ userRouter.post('/verify-razor', paymentVerification);
 userRouter.post('/forgot-password', forgotPassword);
 userRouter.post('/verify-otp', verifyOtp);
 userRouter.post('/reset-password', resetPassword);
+userRouter.post('/check-email', checkEmailRegistered);
 
 
 export default userRouter;
@@ -33,3 +35,4 @@ export default userRouter;
 //http://localhost:4000/api/user/forgot-password
 //http://localhost:4000/api/user/verify-otp
 //http://localhost:4000/api/user/reset-password
+//http://localhost:4000/api/user/check-email

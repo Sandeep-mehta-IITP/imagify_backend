@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import razorpay from "razorpay";
 import transactionModel from "../models/transactionModel.js";
 
+// register user
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -44,6 +45,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
+// login user
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -95,6 +97,34 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// API to check if the email is registered
+export const checkEmailRegistered = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await userModel.findOne({ email })
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Email not registered, Please enter registered email address."
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Email is registered."
+    })
+
+  } catch (error) {
+     return res.status(500).json({
+      success: false,
+      message: error.message,
+     })
+  }
+}
+
+// forgot password
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) {
@@ -129,6 +159,7 @@ export const forgotPassword = async (req, res) => {
   
 }
 
+// verify otp
 export const verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
@@ -174,7 +205,7 @@ export const verifyOtp = async (req, res) => {
 
 }
 
-
+// reset password
 export const resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
@@ -221,6 +252,7 @@ export const resetPassword = async (req, res) => {
 
 }
 
+// credits handler
 export const userCredits = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -336,6 +368,8 @@ export const paymentRazorpay = async (req, res) => {
   }
 };
 
+
+// payment verification 
 export const paymentVerification = async (req, res) => {
   try {
     const { razorpay_order_id } = req.body;
